@@ -1,0 +1,18 @@
+name: CI
+
+on:
+  push:
+    branches: [ "release", "uat", "sit" ]
+  pull_request:
+    branches: [ "release", "uat", "sit" ]
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: It worked
+        run: echo "it worked"
