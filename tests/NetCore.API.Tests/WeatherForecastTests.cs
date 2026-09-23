@@ -1,4 +1,5 @@
 using NetCore.API;
+using Xunit;
 
 namespace NetCore.API.Tests;
 

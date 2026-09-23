@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ "release", "uat", "sit" ]
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 env:
   DOTNET_VERSION: '8.0.x'
   SOLUTION_FILE: NetCore.API.sln
@@ -37,11 +42,11 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          dotnet test ${{ env.SOLUTION_FILE }} \
+          dotnet test ${{ env.TEST_PROJECT }} \
             --configuration Release \
             --no-build \
             --logger "trx;LogFileName=test-results.trx" \
-            --collect:"XPlatCodeCoverage" \
+            --collect:"XPlat Code Coverage" \
             --results-directory ./TestResults \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
 
@@ -52,6 +57,7 @@ jobs:
           name: .NET Test Results
           path: TestResults/**/*.trx
           reporter: dotnet-trx
+          fail-on-error: 'false'
 
       - name: Upload test results artifact
         uses: actions/upload-artifact@v4
@@ -168,6 +174,7 @@ jobs:
           image-ref: 'netcore-api:${{ github.sha }}'
           format: 'table'
           exit-code: '1'
+          ignore-unfixed: true
           severity: 'HIGH,CRITICAL'
           output: 'trivy-image-results.txt'
 

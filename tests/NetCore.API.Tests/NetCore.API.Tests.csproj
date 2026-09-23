@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NetCore.API.csproj" />
+    <ProjectReference Include="..\..\NetCore.API.csproj" />
   </ItemGroup>
 
 </Project>
