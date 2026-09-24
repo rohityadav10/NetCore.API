@@ -97,15 +97,38 @@ try {
     Copy-Item -Path "$ArtifactPath\*" -Destination $SitePath -Recurse -Force
     Write-Host "Artifacts copied successfully."
 
-    # 5. Start IIS Site and Application Pool
-    Write-Host "[4/6] Starting IIS App Pool [$AppPoolName] and Site [$SiteName]..."
-    if (Get-Item "IIS:\AppPools\$AppPoolName" -ErrorAction SilentlyContinue) {
-        Start-WebAppPool -Name $AppPoolName
+    # 5. Start / Ensure IIS App Pool and Site exist
+    Write-Host "[4/6] Ensuring IIS App Pool [$AppPoolName] and Site [$SiteName] are configured..."
+    
+    # Determine port from HealthCheckUrl (default 8080)
+    $Port = 8080
+    if ($HealthCheckUrl -match ":(\d+)") {
+        $Port = [int]$matches[1]
+    } elseif ($HealthCheckUrl -match "^https?://[^/:]+/") {
+        $Port = 80
     }
-    if (Get-Item "IIS:\Sites\$SiteName" -ErrorAction SilentlyContinue) {
-        Start-WebSite -Name $SiteName
+
+    # Ensure App Pool exists with No Managed Code (.NET Core / Angular requirement)
+    if (-not (Test-Path "IIS:\AppPools\$AppPoolName")) {
+        Write-Host "Auto-creating IIS App Pool [$AppPoolName] (No Managed Code)..."
+        New-WebAppPool -Name $AppPoolName
+        Set-ItemProperty "IIS:\AppPools\$AppPoolName" -Name "managedRuntimeVersion" -Value ""
     }
-    Start-Sleep -Seconds 3
+
+    # Ensure Site exists
+    if (-not (Test-Path "IIS:\Sites\$SiteName")) {
+        Write-Host "Auto-creating IIS Web Site [$SiteName] on port $Port bound to [$SitePath]..."
+        New-WebSite -Name $SiteName -Port $Port -PhysicalPath $SitePath -ApplicationPool $AppPoolName
+    } else {
+        Set-ItemProperty "IIS:\Sites\$SiteName" -Name "physicalPath" -Value $SitePath
+        Set-ItemProperty "IIS:\Sites\$SiteName" -Name "applicationPool" -Value $AppPoolName
+    }
+
+    # Start App Pool and Site
+    Write-Host "Starting App Pool and Web Site..."
+    Start-WebAppPool -Name $AppPoolName -ErrorAction SilentlyContinue
+    Start-WebSite -Name $SiteName -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 5
 
     # 6. Execute Health Check
     Write-Host "[5/6] Running health check against [$HealthCheckUrl]..."

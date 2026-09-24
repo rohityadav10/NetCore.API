@@ -16,7 +16,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Only redirect to HTTPS if HTTPS port is configured
+if (app.Configuration["HTTPS_PORT"] != null)
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthorization();
 
