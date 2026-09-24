@@ -210,7 +210,7 @@ jobs:
   # Stage 5: Deploy to SIT (On-Premises IIS on rohit-vm)
   deploy-sit:
     name: Deploy to SIT (IIS)
-    runs-on: [self-hosted, windows, iis]
+    runs-on: [self-hosted, windows]
     needs: [build-and-test, security-scan, containerize, azure-oidc-verify]
     if: github.ref == 'refs/heads/release'
     environment:
