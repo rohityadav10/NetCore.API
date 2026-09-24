@@ -10,6 +10,7 @@ permissions:
   contents: read
   checks: write
   pull-requests: write
+  id-token: write
 
 env:
   DOTNET_VERSION: '8.0.x'
@@ -187,3 +188,21 @@ jobs:
 
       - name: Container build succeeded
         run: echo "Docker image built and scanned - netcore-api:${{ github.sha }}"
+
+  # Stage 4: Verify Azure Keyless Authentication via OIDC
+  azure-oidc-verify:
+    name: Verify Azure OIDC Login
+    runs-on: ubuntu-latest
+    needs: containerize
+    if: github.ref == 'refs/heads/release'
+    steps:
+      - name: Azure Login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify Azure Connection
+        run: |
+          az account show

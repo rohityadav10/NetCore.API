@@ -1,0 +1,33 @@
+name: Deploy - UAT (IIS)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-uat:
+    name: Deploy to UAT (IIS)
+    runs-on: [self-hosted, windows, iis]
+    environment:
+      name: uat
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: api-publish
+          path: ./publish
+        continue-on-error: true
+
+      - name: Deploy API to IIS (UAT)
+        shell: powershell
+        run: |
+          ./scripts/deploy-iis.ps1 `
+            -ArtifactPath "./publish" `
+            -SitePath "${{ vars.IIS_SITE_PATH || 'C:\inetpub\wwwroot\api-uat' }}" `
+            -AppPoolName "${{ vars.IIS_APP_POOL || 'NetCoreApiUatAppPool' }}" `
+            -SiteName "${{ vars.IIS_SITE_NAME || 'NetCoreAPI-UAT' }}" `
+            -HealthCheckUrl "${{ vars.HEALTH_CHECK_URL || 'http://localhost:8080/WeatherForecast' }}" `
+            -EnvironmentName "UAT"

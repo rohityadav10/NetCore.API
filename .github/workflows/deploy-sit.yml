@@ -1,0 +1,39 @@
+name: Deploy - SIT (IIS)
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI - Build, Test, Scan"]
+    types: [completed]
+    branches: ["release"]
+
+jobs:
+  deploy-sit:
+    name: Deploy to SIT (IIS)
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: [self-hosted, windows, iis]
+    environment:
+      name: sit
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: api-publish
+          path: ./publish
+          run-id: ${{ github.event.workflow_run.id || github.run_id }}
+        continue-on-error: true
+
+      - name: Deploy API to IIS
+        shell: powershell
+        run: |
+          ./scripts/deploy-iis.ps1 `
+            -ArtifactPath "./publish" `
+            -SitePath "${{ vars.IIS_SITE_PATH || 'C:\inetpub\wwwroot\api' }}" `
+            -AppPoolName "${{ vars.IIS_APP_POOL || 'NetCoreApiAppPool' }}" `
+            -SiteName "${{ vars.IIS_SITE_NAME || 'NetCoreAPI' }}" `
+            -HealthCheckUrl "${{ vars.HEALTH_CHECK_URL || 'http://localhost:8080/WeatherForecast' }}" `
+            -EnvironmentName "SIT"
