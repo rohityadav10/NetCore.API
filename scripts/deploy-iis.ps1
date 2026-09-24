@@ -110,7 +110,10 @@ try {
             Remove-Item -Path $old.FullName -Recurse -Force -ErrorAction SilentlyContinue
         }
     } else {
-        Write-Host "Target directory is clean. No prior files to backup."
+        Write-Host "Target directory has no prior files. Creating initial baseline backup from artifacts..."
+        New-Item -Path $CurrentBackupDir -ItemType Directory -Force | Out-Null
+        Copy-Item -Path "$ArtifactPath\*" -Destination $CurrentBackupDir -Recurse -Force
+        Write-Host "Initial baseline backup created: $CurrentBackupDir"
     }
 } catch {
     Write-Warning "Backup note: $_"

@@ -236,3 +236,11 @@ jobs:
             -SiteName "NetCoreAPI" `
             -HealthCheckUrl "http://localhost:8080/WeatherForecast" `
             -EnvironmentName "SIT"
+
+      - name: Upload IIS backup artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: netcore-api-iis-backup
+          path: C:\inetpub\backups\
+          if-no-files-found: ignore
