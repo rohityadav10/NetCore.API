@@ -43,7 +43,24 @@ Write-Host "Target Path     : $SitePath"
 Write-Host "App Pool        : $AppPoolName"
 Write-Host "=========================================================="
 
-# 1. Verify artifact source exists
+# 1. Verify artifact source exists (with auto-discovery fallback)
+if (-not (Test-Path $ArtifactPath)) {
+    $candidates = @(
+        "./publish",
+        "publish",
+        "NetCore.API/publish",
+        "bin/Release/net8.0/publish",
+        "../publish"
+    )
+    foreach ($cand in $candidates) {
+        if (Test-Path "$cand/NetCore.API.dll") {
+            $ArtifactPath = $cand
+            Write-Host "Auto-discovered artifact directory at: $ArtifactPath"
+            break
+        }
+    }
+}
+
 if (-not (Test-Path $ArtifactPath)) {
     Write-Error "Artifact directory not found at: $ArtifactPath"
     exit 1
