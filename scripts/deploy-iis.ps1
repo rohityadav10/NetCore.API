@@ -98,7 +98,7 @@ try {
     Copy-Item -Path "$ArtifactPath\*" -Destination $SitePath -Recurse -Force
     Write-Host "SUCCESS: Build artifacts copied to $SitePath"
 } catch {
-    Write-Error "Failed to copy artifacts to $SitePath: $_"
+    Write-Error "Failed to copy artifacts to ${SitePath}: $_"
     exit 1
 }
 
@@ -148,7 +148,7 @@ try {
 
 # 8. List deployed files to verify delivery
 Write-Host "=========================================================="
-Write-Host "VERIFICATION: Files deployed to $SitePath:"
+Write-Host "VERIFICATION: Files deployed to ${SitePath}:"
 Get-ChildItem -Path $SitePath | Select-Object Name, Length, LastWriteTime | Format-Table -AutoSize | Out-String | Write-Host
 Write-Host "DEPLOYMENT SUCCEEDED: Build artifacts successfully reached $SitePath!"
 Write-Host "=========================================================="
