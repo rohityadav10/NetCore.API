@@ -84,6 +84,14 @@ try {
         New-Item -Path $CurrentBackupDir -ItemType Directory -Force | Out-Null
         Copy-Item -Path "$SitePath\*" -Destination $CurrentBackupDir -Recurse -Force
         Write-Host "Backup created: $CurrentBackupDir"
+        
+        # Prune old backups to preserve server disk space (keep 5 most recent)
+        $OldBackups = Get-ChildItem -Path $BackupPath -Directory -Filter "$SiteName-*" |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -Skip 5
+        foreach ($old in $OldBackups) {
+            Remove-Item -Path $old.FullName -Recurse -Force -ErrorAction SilentlyContinue
+        }
     } else {
         Write-Host "Target directory is clean. No prior files to backup."
     }
@@ -99,6 +107,11 @@ try {
     Write-Host "SUCCESS: Build artifacts copied to $SitePath"
 } catch {
     Write-Error "Failed to copy artifacts to ${SitePath}: $_"
+    # Automatic rollback to backup if deployment failed
+    if ($CurrentBackupDir -and (Test-Path $CurrentBackupDir)) {
+        Write-Warning "AUTOMATIC ROLLBACK: Deployment failed. Restoring from $CurrentBackupDir..."
+        & "$PSScriptRoot\rollback-iis.ps1" -BackupDir $CurrentBackupDir -SitePath $SitePath -AppPoolName $AppPoolName -SiteName $SiteName
+    }
     exit 1
 }
 

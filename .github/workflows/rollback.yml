@@ -1,0 +1,29 @@
+name: Rollback - SIT (IIS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_dir:
+        description: 'Backup folder to restore (leave "latest" for most recent backup)'
+        required: false
+        default: 'latest'
+
+jobs:
+  rollback:
+    name: Rollback IIS Deployment
+    runs-on: [self-hosted, windows]
+    environment:
+      name: sit
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Execute IIS Rollback
+        shell: powershell
+        run: |
+          ./scripts/rollback-iis.ps1 `
+            -BackupDir "${{ github.event.inputs.backup_dir }}" `
+            -SitePath "C:\inetpub\wwwroot\api" `
+            -AppPoolName "NetCoreApiAppPool" `
+            -SiteName "NetCoreAPI"
