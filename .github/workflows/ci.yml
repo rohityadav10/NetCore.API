@@ -206,3 +206,33 @@ jobs:
       - name: Verify Azure Connection
         run: |
           az account show
+
+  # Stage 5: Deploy to SIT (On-Premises IIS on rohit-vm)
+  deploy-sit:
+    name: Deploy to SIT (IIS)
+    runs-on: [self-hosted, windows, iis]
+    needs: [build-and-test, security-scan, containerize, azure-oidc-verify]
+    if: github.ref == 'refs/heads/release'
+    environment:
+      name: sit
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Download API published artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: api-publish
+          path: ./publish
+
+      - name: Deploy API to IIS
+        shell: powershell
+        run: |
+          ./scripts/deploy-iis.ps1 `
+            -ArtifactPath "./publish" `
+            -SitePath "C:\inetpub\wwwroot\api" `
+            -AppPoolName "NetCoreApiAppPool" `
+            -SiteName "NetCoreAPI" `
+            -HealthCheckUrl "http://localhost:8080/WeatherForecast" `
+            -EnvironmentName "SIT"
