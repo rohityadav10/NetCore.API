@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 
 namespace NetCore.API.Controllers;
@@ -6,6 +7,13 @@ namespace NetCore.API.Controllers;
 [Route("api/[controller]")]
 public class AppStatusController : ControllerBase
 {
+    // The CI build stamps InformationalVersion with the pipeline build number, so a
+    // post-deploy smoke test can prove the new build is what is actually serving.
+    // Local builds report <Version> from the csproj.
+    private static readonly string AppVersion =
+        typeof(AppStatusController).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
+
     private readonly IWebHostEnvironment _environment;
 
     public AppStatusController(IWebHostEnvironment environment)
@@ -20,7 +28,7 @@ public class AppStatusController : ControllerBase
         {
             Status = "Healthy",
             Service = "NetCore.API",
-            Version = "1.2.0",
+            Version = AppVersion,
             Environment = _environment.EnvironmentName,
             ServerTimeUtc = DateTime.UtcNow
         });
