@@ -41,8 +41,11 @@ $docker = @(
 )
 $scanTarget = if ($ScanType -eq 'fs') { "/src/$Target" } else { $Target }
 # fs scans include npm devDependencies: build tooling is part of the supply chain too.
-$depScope = if ($ScanType -eq 'fs') { @('--include-dev-deps') } else { @() }
-$ignore = @()
+# Typed [string[]]: an `if` expression would unwrap a one-item array to a string, and
+# splatting a string to a native command passes it one character per argument.
+[string[]]$depScope = @()
+if ($ScanType -eq 'fs') { $depScope = @('--include-dev-deps') }
+[string[]]$ignore = @()
 if (Test-Path (Join-Path $source '.azure/.trivyignore.yaml')) { $ignore = @('--ignorefile', '/src/.azure/.trivyignore.yaml') }
 
 $json = "/reports/trivy-$Name.json"
