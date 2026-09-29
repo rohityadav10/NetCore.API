@@ -14,7 +14,7 @@ The project demonstrates:
 * Docker containerization
 * GitHub Actions CI/CD
 * Code quality and security checks
-* Build and deployment automation
+* Build & deployment automation
 
 ## Technology Stack
 
