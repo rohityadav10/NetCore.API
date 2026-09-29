@@ -34,7 +34,7 @@ the portal, not in the repo. `.azure/SETUP.md` records it step by step.
 
 | Concern | Choice | Why |
 |---|---|---|
-| Container registry | **Azure Container Registry** (Basic) | Same cloud as Container Apps; pulls by managed identity (no passwords); ACR Tasks for retention; Defender for Containers for registry-side scanning. |
+| Container registry | **Azure Container Registry** (Basic) | Same cloud as Container Apps; pulls by managed identity (no passwords); retention by the pipeline (keep 10 + anything a live revision runs; ACR Tasks are blocked on trial subscriptions); Defender for Containers for registry-side scanning. |
 | Artifact repository | **Pipeline artifacts** | Both apps are deployable applications, not libraries, so no NuGet/npm packages are produced. The IIS drops are pipeline artifacts tied to the exact run. Azure Artifacts would become relevant for shared libraries or as an upstream proxy (§9). |
 | SAST | **Semgrep** (pinned container, public rulesets) | One tool for C#, TypeScript, Dockerfiles, secrets and CI YAML. Free, fast, no server. SonarCloud is wired in as an optional extra (`enableSonarCloud`). |
 | Dependency scan | **NuGet advisories** (`dotnet list package --vulnerable`) for .NET; **Trivy** for npm | Trivy can't see a .NET dependency graph from source (it needs a lock file or `*.deps.json`). The SDK's own check covers transitive and test packages against the GitHub Advisory Database. For npm, Trivy reads `package-lock.json` directly. |

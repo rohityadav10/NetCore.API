@@ -51,14 +51,11 @@ until the first PROD deployment.
 Then set `acrName: <your-unique-acr-name>` in `.azure/templates/variables/common.yml`
 **in both repos**.
 
-**Image retention** (keep the last 10 builds per repository, purge untagged manifests daily).
-ACR's retention *policy* is Premium-only, so this uses an ACR Task, which works on Basic:
-
-```bash
-az acr task create --registry <your-unique-acr-name> --name purge-old-images \
-  --cmd "acr purge --filter 'netcore-api:.*' --filter 'angular-web:.*' --keep 10 --ago 0d --untagged" \
-  --schedule "0 1 * * *" --context /dev/null
-```
+**Image retention** (keep the newest 10 builds per repository, plus any image a live Container
+App revision still runs; untagged manifests are purged). Nothing to set up: the pipeline runs
+`.azure/scripts/acr-retention.sh` after every push. The alternatives aren't available everywhere:
+ACR's retention *policy* is Premium-only, and ACR Tasks (`acr purge` on a schedule) are blocked on
+free-trial and some sponsored subscriptions with `TasksOperationsNotAllowed`.
 
 **Registry-level image scanning (optional, paid after a 30-day trial).** Microsoft Defender for
 Containers scans every image pushed to ACR:
@@ -85,6 +82,7 @@ ABAC repository permissions):
 SP_ID=<"Service principal Id" from the connection's "Manage service connection roles" / App registration>
 ACR_ID=$(az acr show -n <your-unique-acr-name> --query id -o tsv)
 az role assignment create --assignee "$SP_ID" --role AcrPush --scope "$ACR_ID"
+az role assignment create --assignee "$SP_ID" --role AcrDelete --scope "$ACR_ID"   # retention clean-up
 ```
 
 **b. GitHub.** Nothing to create by hand. When you create the pipelines (step 7), Azure DevOps
@@ -145,7 +143,10 @@ Then *environment → ⋯ → Approvals and checks*:
 |---|---|
 | `sit` | none: deploys automatically on merge. Optional: **Exclusive lock**. |
 | `uat` | **Approvals**: QA lead(s); untick *Allow approvers to approve their own runs*; timeout 3 days. |
-| `prod` | **Approvals**: Release manager(s). A second **Approvals** check: product owner / business sign-off. Both must approve, and checks are AND-ed. **Business hours**: Mon–Thu, 09:00–17:00, *(UTC+05:30) Chennai, Kolkata, Mumbai, New Delhi*. **Branch control**: allowed branches `refs/heads/release,refs/heads/main`. **Exclusive lock**: one production deployment at a time. |
+| `prod` | **Approvals**: list the release manager **and** the product owner / business sign-off as approvers. With several individual users listed, **all** must approve: that's the second sign-off. **Business hours**: Mon–Thu, 09:00–17:00, *(UTC+05:30) Chennai, Kolkata, Mumbai, New Delhi*. **Branch control**: allowed branches `refs/heads/release,refs/heads/main`. **Exclusive lock**: one production deployment at a time. |
+
+Working alone on the exercise? Add only yourself, and keep *Allow approvers to approve their own
+runs* ticked under **Advanced**, or you can't approve the runs you queued.
 
 Approvers get an e-mail automatically when a stage waits for them. The pipeline's own automated
 PROD checks (evidence plus a fresh re-scan) run in the `Preflight` job after the approvals.
