@@ -21,3 +21,14 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - "ci-cd"
+
+  # Base images of the Azure DevOps pipeline's Dockerfiles (.azure/docker). Patched base
+  # images are what keep the Trivy image gate green over time.
+  - package-ecosystem: "docker"
+    directory: "/.azure/docker"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "security"
