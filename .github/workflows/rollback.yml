@@ -21,9 +21,14 @@ jobs:
 
       - name: Execute IIS Rollback
         shell: powershell
+        # The input goes through an environment variable, never straight into the script
+        # text: `${{ }}` interpolation into `run:` allows command injection (Semgrep
+        # run-shell-injection).
+        env:
+          BACKUP_DIR: ${{ github.event.inputs.backup_dir }}
         run: |
           ./scripts/rollback-iis.ps1 `
-            -BackupDir "${{ github.event.inputs.backup_dir }}" `
+            -BackupDir "$env:BACKUP_DIR" `
             -SitePath "C:\inetpub\wwwroot\api" `
             -AppPoolName "NetCoreApiAppPool" `
             -SiteName "NetCoreAPI"
