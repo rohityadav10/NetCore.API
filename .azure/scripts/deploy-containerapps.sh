@@ -8,8 +8,8 @@
 #   3. Wait until it is provisioned, running and healthy.
 #   4. Smoke test the new revision on its OWN revision FQDN: liveness, plus the build
 #      version it reports. Real users still see 0% of it.
-#   5. Canary: move CANARY_PERCENT of traffic to it and keep probing the public URL for
-#      CANARY_SECONDS.
+#   5. Canary: move CANARY_PERCENT of traffic to it for CANARY_SECONDS, probing the new
+#      revision's health and checking the public URL isn't down (no answer / 5xx).
 #   6. Promote to 100%. The previous revision stays active at 0% (instant rollback target);
 #      older ones are deactivated.
 #   Any failure after step 2: traffic back to the stable revision at 100%, the new revision
@@ -48,6 +48,14 @@ probe() {
   body="$(curl -fsS --max-time 10 -H 'Cache-Control: no-cache' "$1")" || return 1
   [[ -z "${2:-}" ]] && return 0
   [[ "$(jq -r '.version // empty' <<<"$body" 2>/dev/null)" == "$2" ]]
+}
+# public_up URL -> 0 unless the endpoint is down (no answer or HTTP 5xx). During the canary the
+# public URL is shared with the stable revision, which may predate /health (e.g. the Bicep
+# placeholder on the first deployment), so only an outage counts there, not a 404.
+public_up() {
+  local code
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 -H 'Cache-Control: no-cache' "$1" || true)"
+  [[ "$code" =~ ^[1-4][0-9][0-9]$ ]]
 }
 probe_until() {  # url expected-version attempts
   local i
@@ -144,7 +152,7 @@ if ((CANARY_PERCENT > 0 && CANARY_PERCENT < 100)); then
   end=$((SECONDS + CANARY_SECONDS))
   while ((SECONDS < end)); do
     probe "https://$REV_FQDN$HEALTH_PATH" || { log "canary revision failed its probe"; false; }
-    probe "https://$APP_FQDN$HEALTH_PATH" || { log "public endpoint failed its probe"; false; }
+    public_up "https://$APP_FQDN/" || { log "public endpoint is down (no answer or HTTP 5xx)"; false; }
     sleep 10
   done
 fi
