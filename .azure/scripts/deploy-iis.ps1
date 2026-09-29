@@ -160,6 +160,12 @@ function Write-DeployLog([string]$outcome, [string]$path) {
     Add-Content -Path $logFile -Value $line
 }
 
+# Windows PowerShell 5.1's Set-Content -Encoding UTF8 writes a byte-order mark, which breaks
+# JSON parsing of config.json (the version smoke test). Write plain UTF-8 instead.
+function Write-Utf8NoBom([string]$path, [string]$content) {
+    [System.IO.File]::WriteAllText($path, $content, (New-Object System.Text.UTF8Encoding($false)))
+}
+
 function Wait-AppPoolState([string]$name, [string]$state) {
     for ($i = 0; $i -lt 30; $i++) {
         if ((Get-WebAppPoolState -Name $name).Value -eq $state) { return }
@@ -234,7 +240,7 @@ $rewrite
   <location path="index.html">$noCache</location>
   <location path="config.json">$noCache</location>
 </configuration>
-"@ | Set-Content -Path $path -Encoding UTF8
+"@ | ForEach-Object { Write-Utf8NoBom $path $_ }
 }
 
 function Switch-SiteToRelease([string]$path) {
@@ -281,7 +287,7 @@ if ($AppType -eq 'AspNetCore') {
 else {
     if ($SpaConfigJson) {
         $null = $SpaConfigJson | ConvertFrom-Json   # refuse to ship malformed JSON
-        Set-Content -Path (Join-Path $releaseDir 'config.json') -Value $SpaConfigJson -Encoding UTF8
+        Write-Utf8NoBom (Join-Path $releaseDir 'config.json') $SpaConfigJson
         Write-Host "  config.json: $SpaConfigJson"
     }
     Write-SpaWebConfig (Join-Path $releaseDir 'web.config')
