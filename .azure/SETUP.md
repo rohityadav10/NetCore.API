@@ -117,6 +117,11 @@ agent. It sits next to the existing GitHub Actions runner; they don't interfere.
      --runAsService --windowsLogonAccount "NT AUTHORITY\SYSTEM"
    ```
 
+   Use the **x64** package (the *New agent → Windows* page may be on *x86*; the URL must say
+   `vsts-agent-win-x64`). A 32-bit agent runs 32-bit PowerShell, and IIS's configuration API is
+   64-bit only: every deployment would fail with `80040154 Class not registered`. The deploy scripts
+   refuse to run under 32-bit PowerShell and name this cause.
+
    The agent runs as SYSTEM because managing IIS app pools and sites needs local admin rights.
    Revoke the PAT afterwards; the agent keeps its own credential.
 
@@ -220,6 +225,7 @@ The flow is now enforced: feature branch → PR → all gates green → merge �
 | `Variable group was not found or not authorized` | Create all four groups (step 6), then *Permit* on the run. |
 | `unauthorized: authentication required` on `docker push` | AcrPush role missing (step 3a), or `acrName` in `common.yml` doesn't match the registry. |
 | IIS stage: `Import-Module WebAdministration` fails | Install `Web-Scripting-Tools` (step 4). |
+| IIS stage: `80040154 Class not registered`, or "32-bit PowerShell cannot manage IIS" | The x86 agent is installed; reinstall with `vsts-agent-win-x64` (step 4). |
 | IIS API site answers HTTP 500.19 / 500.31 | ASP.NET Core Hosting Bundle missing; install, then `iisreset`. |
 | SPA deep link (e.g. `/some/route`) returns 404 on IIS | URL Rewrite isn't installed. The deploy logs a warning and skips the rule rather than break the site. |
 | PROD stage waits with "Business hours" | By design; it resumes inside the window. |

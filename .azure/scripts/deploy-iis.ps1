@@ -149,6 +149,13 @@ if ($ComputerName) {
 }
 
 # ── Local mode: this machine is the IIS server ────────────────────────────────────────
+# IIS's configuration API (WebAdministration) exists only for 64-bit processes. Under 32-bit
+# PowerShell (e.g. the x86 build of the Azure DevOps agent) every IIS call fails with
+# "80040154 Class not registered", so stop here with the actual cause.
+if ([Environment]::Is64BitOperatingSystem -and -not [Environment]::Is64BitProcess) {
+    Write-Host "##vso[task.logissue type=error]32-bit PowerShell cannot manage IIS. Install the x64 Azure DevOps agent (vsts-agent-win-x64) on this server."
+    exit 1
+}
 Import-Module WebAdministration
 
 if (-not $ReleasesRoot) { $ReleasesRoot = Join-Path $env:SystemDrive "inetpub\ado\$SiteName" }
