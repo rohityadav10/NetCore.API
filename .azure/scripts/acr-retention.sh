@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Registry retention for one repository, run by the pipeline right after each push.
+# Registry retention for one repository, run by the pipeline right after each push. 
 #
 # Why here and not as an ACR Task (`acr purge` on a schedule): ACR Tasks are blocked on
 # free-trial and some sponsored subscriptions (TasksOperationsNotAllowed), and the retention
