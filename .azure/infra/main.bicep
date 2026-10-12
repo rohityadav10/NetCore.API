@@ -1,5 +1,5 @@
 // Azure resources for the PROD (cloud) path of both applications: NetCore.API and Angular.web.
-// Deploy once into an empty resource group (see .azure/SETUP.md, step 3):
+// Deploy once into an empty resource group (see .azure/SETUP.md, step 3): 
 //
 //   az deployment group create -g rg-devops-exercise -f .azure/infra/main.bicep -p acrName=<unique>
 //
